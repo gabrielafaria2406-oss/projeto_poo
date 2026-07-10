@@ -1,5 +1,6 @@
 import os
 import sys
+from fastapi.middleware.cors import CORSMiddleware
 
 sys.path.insert(
     0,
@@ -19,6 +20,19 @@ from servico.servico_tarefas import ServicoTarefas
 from repositorio.repositorio_ficheiro import RepositorioFicheiro
 
 app = FastAPI(title="Gestão de Tarefas")
+
+app = FastAPI(title="Gestão de Tarefas")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8080",
+        "http://127.0.0.1:8080"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _servico = ServicoTarefas(
     RepositorioFicheiro("tarefas.csv")
