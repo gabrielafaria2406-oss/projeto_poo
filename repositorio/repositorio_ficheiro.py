@@ -60,43 +60,58 @@ class RepositorioFicheiro(IRepositorio):
 
             for campos in leitor:
 
-                tipo = campos[0]
+                try:
+                    if len(campos) < 7:
+                        print(f"Linha ignorada (inválida): {campos}")
+                        continue
 
-                id_tarefa = int(campos[1])
-                titulo = campos[2]
-                responsavel = campos[3]
-                estado = campos[4]
+                    tipo = campos[0]
 
-                if tipo == "tecnica":
+                    id_tarefa = int(campos[1])
+                    titulo = campos[2]
+                    responsavel = campos[3]
+                    estado = campos[4]
 
-                    linguagem = campos[5]
-                    horas = float(campos[6])
+                    if tipo == "tecnica":
 
-                    tarefas.append(
-                        TarefaTecnica(
-                            id_tarefa,
-                            titulo,
-                            responsavel,
-                            linguagem,
-                            horas,
-                            estado
+                        linguagem = campos[5]
+                        horas = float(campos[6])
+
+                        tarefas.append(
+                            TarefaTecnica(
+                                id_tarefa,
+                                titulo,
+                                responsavel,
+                                linguagem,
+                                horas,
+                                estado
+                            )
                         )
-                    )
+                    
+            
 
-                elif tipo == "reuniao":
+                    elif tipo == "reuniao":
 
-                    local = campos[5]
-                    duracao = float(campos[6])
+                        local = campos[5]
+                        duracao = float(campos[6])
 
-                    tarefas.append(
-                        TarefaReuniao(
-                            id_tarefa,
-                            titulo,
-                            responsavel,
-                            local,
-                            duracao,
-                            estado
+                        tarefas.append(
+                            TarefaReuniao(
+                                id_tarefa,
+                                titulo,
+                                responsavel,
+                                local,
+                                duracao,
+                                estado
+                            )
                         )
-                    )
+                
+            
+
+                    else:
+                        print(f"Tipo desconhecido: {tipo}")
+
+                except (ValueError, IndexError) as e:
+                    print(f"Erro ao carregar linha {campos}: {e}")
 
         return tarefas

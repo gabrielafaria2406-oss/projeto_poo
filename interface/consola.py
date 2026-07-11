@@ -106,7 +106,11 @@ class Consola:
 
     def _mudar_estado(self):
 
-        id_tarefa = int(input("ID da tarefa: "))
+        try:
+            id_tarefa = int(input("ID da tarefa: "))
+        except ValueError:
+            print("O ID deve ser um número.")
+            return
         novo_estado = input(
             "Novo estado (pendente/em curso/concluída): "
         )
