@@ -1,40 +1,62 @@
+from dominio.colaborador import Colaborador
+from dominio.tarefa_reuniao import TarefaReuniao
+from dominio.tarefa_tecnica import TarefaTecnica
+from interface.consola import Consola
 from repositorio.repositorio_ficheiro import RepositorioFicheiro
 from servico.servico_tarefas import ServicoTarefas
-from dominio.tarefa_tecnica import TarefaTecnica
-from dominio.tarefa_reuniao import TarefaReuniao
-from interface.consola import Consola
 
 
 def criar_servico_com_exemplos() -> ServicoTarefas:
-    """Monta o serviço com 2-3 tarefas de exemplo, para a opção 'Listar'
-    ter logo algo para mostrar no arranque."""
+    """Cria o serviço com algumas tarefas de exemplo."""
 
-    repositorio = RepositorioFicheiro("tarefas.csv")
-    servico = ServicoTarefas(repositorio)
+    repositorio = RepositorioFicheiro(
+        "tarefas.csv"
+    )
+
+    servico = ServicoTarefas(
+        repositorio
+    )
+
+    ana = Colaborador(
+        "Ana",
+        "ana@email.com"
+    )
+
+    bruno = Colaborador(
+        "Bruno",
+        "bruno@email.com"
+    )
+
+    carla = Colaborador(
+        "Carla",
+        "carla@email.com"
+    )
 
     servico.adicionar(
         TarefaTecnica(
             servico.proximo_id(),
             "Script de ETL",
-            "Ana",
+            ana,
             "Python",
             8
         )
     )
+
     servico.adicionar(
         TarefaTecnica(
             servico.proximo_id(),
             "Dashboard de KPIs",
-            "Bruno",
+            bruno,
             "C#",
             12
         )
     )
+
     servico.adicionar(
         TarefaReuniao(
             servico.proximo_id(),
             "Kickoff Cliente",
-            "Carla",
+            carla,
             "Sala 3",
             1.5
         )

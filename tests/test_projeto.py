@@ -1,10 +1,22 @@
 import unittest
 
+from dominio.colaborador import Colaborador
 from dominio.projeto import Projeto
 from dominio.tarefa_tecnica import TarefaTecnica
 
 
 class TestProjeto(unittest.TestCase):
+
+    def setUp(self):
+        self.ana = Colaborador(
+            "Ana",
+            "ana@email.com"
+        )
+
+        self.bruno = Colaborador(
+            "Bruno",
+            "bruno@email.com"
+        )
 
     def test_adicionar_e_procurar_tarefa(self):
         projeto = Projeto("Projeto POO")
@@ -12,7 +24,7 @@ class TestProjeto(unittest.TestCase):
         tarefa = TarefaTecnica(
             1,
             "Script ETL",
-            "Ana",
+            self.ana,
             "Python",
             8
         )
@@ -21,8 +33,20 @@ class TestProjeto(unittest.TestCase):
 
         encontrada = projeto.procurar_tarefa(1)
 
-        self.assertEqual(projeto.total_tarefas(), 1)
-        self.assertIs(encontrada, tarefa)
+        self.assertEqual(
+            projeto.total_tarefas(),
+            1
+        )
+
+        self.assertIs(
+            encontrada,
+            tarefa
+        )
+
+        self.assertIs(
+            encontrada.responsavel,
+            self.ana
+        )
 
     def test_nao_permite_ids_repetidos(self):
         projeto = Projeto("Projeto POO")
@@ -30,7 +54,7 @@ class TestProjeto(unittest.TestCase):
         primeira = TarefaTecnica(
             1,
             "Script ETL",
-            "Ana",
+            self.ana,
             "Python",
             8
         )
@@ -38,7 +62,7 @@ class TestProjeto(unittest.TestCase):
         segunda = TarefaTecnica(
             1,
             "Dashboard",
-            "Bruno",
+            self.bruno,
             "C#",
             12
         )

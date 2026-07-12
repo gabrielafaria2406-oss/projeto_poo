@@ -1,6 +1,9 @@
 import os
 import sys
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 sys.path.insert(
     0,
@@ -11,17 +14,15 @@ sys.path.insert(
     )
 )
 
-
-from fastapi import FastAPI
-from pydantic import BaseModel
-
+from dominio.colaborador import Colaborador
 from dominio.tarefa_tecnica import TarefaTecnica
-from servico.servico_tarefas import ServicoTarefas
 from repositorio.repositorio_ficheiro import RepositorioFicheiro
+from servico.servico_tarefas import ServicoTarefas
 
-app = FastAPI(title="Gestão de Tarefas")
 
-app = FastAPI(title="Gestão de Tarefas")
+app = FastAPI(
+    title="Gestão de Tarefas"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,24 +35,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_servico = ServicoTarefas(
-    RepositorioFicheiro("tarefas.csv")
-)
 
-_servico.adicionar(
-    TarefaTecnica(
-        _servico.proximo_id(),
-        "Script de ETL",
-        "Ana",
-        "Python",
-        8
+_servico = ServicoTarefas(
+    RepositorioFicheiro(
+        "tarefas.csv"
     )
 )
 
 
+class NovoColaborador(BaseModel):
+    nome: str
+    email: str
+
+
 class NovaTarefaTecnica(BaseModel):
     titulo: str
-    responsavel: str
+    responsavel: NovoColaborador
     linguagem: str
     estimativa_horas: float
 
@@ -60,12 +59,15 @@ class NovoEstado(BaseModel):
     estado: str
 
 
-def para_dict(tarefa):
+def para_dict(tarefa) -> dict:
 
     return {
         "id": tarefa.id,
         "titulo": tarefa.titulo,
-        "responsavel": tarefa.responsavel,
+        "responsavel": {
+            "nome": tarefa.responsavel.nome,
+            "email": tarefa.responsavel.email
+        },
         "estado": tarefa.estado,
         "tipo": tarefa.tipo(),
         "resumo": tarefa.resumo()
@@ -84,8 +86,8 @@ def inicio():
 def listar_tarefas():
 
     return [
-        para_dict(t)
-        for t in _servico.listar()
+        para_dict(tarefa)
+        for tarefa in _servico.listar()
     ]
 
 
@@ -94,17 +96,29 @@ def criar_tarefa(
     dados: NovaTarefaTecnica
 ):
 
-    tarefa = TarefaTecnica(
-        _servico.proximo_id(),
-        dados.titulo,
-        dados.responsavel,
-        dados.linguagem,
-        dados.estimativa_horas
-    )
+    try:
+        responsavel = Colaborador(
+            dados.responsavel.nome,
+            dados.responsavel.email
+        )
 
-    _servico.adicionar(tarefa)
+        tarefa = TarefaTecnica(
+            _servico.proximo_id(),
+            dados.titulo,
+            responsavel,
+            dados.linguagem,
+            dados.estimativa_horas
+        )
 
-    return para_dict(tarefa)
+        _servico.adicionar(tarefa)
+
+        return para_dict(tarefa)
+
+    except (ValueError, TypeError) as erro:
+        raise HTTPException(
+            status_code=400,
+            detail=str(erro)
+        )
 
 
 @app.put("/tarefas/{id_tarefa}/estado")
@@ -113,14 +127,21 @@ def mudar_estado(
     dados: NovoEstado
 ):
 
-    _servico.mudar_estado(
-        id_tarefa,
-        dados.estado
-    )
+    try:
+        _servico.mudar_estado(
+            id_tarefa,
+            dados.estado
+        )
 
-    return {
-        "mensagem": "Estado atualizado"
-    }
+        return {
+            "mensagem": "Estado atualizado"
+        }
+
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=400,
+            detail=str(erro)
+        )
 
 
 @app.get("/tarefas/estado/{estado}")
@@ -129,8 +150,8 @@ def filtrar_estado(
 ):
 
     return [
-        para_dict(t)
-        for t in _servico.filtrar_por_estado(
+        para_dict(tarefa)
+        for tarefa in _servico.filtrar_por_estado(
             estado
         )
     ]
@@ -140,3 +161,9 @@ def filtrar_estado(
 def estatisticas():
 
     return _servico.estatisticas()
+
+
+@app.get("/custos")
+def relatorio_custos():
+
+    return _servico.relatorio_custos()

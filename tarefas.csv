@@ -1,3 +1,3 @@
-tecnica;1;Script de ETL;Ana;pendente;Python;8
-tecnica;2;Dashboard de KPIs;Bruno;pendente;C#;12
-reuniao;3;Kickoff Cliente;Carla;pendente;Sala 3;1.5
+tecnica;1;Script de ETL;Ana;ana@email.com;pendente;Python;8
+tecnica;2;Dashboard de KPIs;Bruno;bruno@email.com;pendente;C#;12
+reuniao;3;Kickoff Cliente;Carla;carla@email.com;pendente;Sala 3;1.5

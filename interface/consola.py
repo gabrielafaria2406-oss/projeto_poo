@@ -1,6 +1,7 @@
-from servico.servico_tarefas import ServicoTarefas
-from dominio.tarefa_tecnica import TarefaTecnica
+from dominio.colaborador import Colaborador
 from dominio.tarefa_reuniao import TarefaReuniao
+from dominio.tarefa_tecnica import TarefaTecnica
+from servico.servico_tarefas import ServicoTarefas
 
 
 class Consola:
@@ -11,27 +12,35 @@ class Consola:
     def executar(self) -> None:
 
         opcoes = {
-            "1": ("Listar tarefas", self._listar, True),
-            "2": ("Adicionar tarefa", self._adicionar, True),
-            "3": ("Mudar estado de uma tarefa", self._mudar_estado, True),
-            "4": ("Filtrar por estado", self._filtrar, True),
-            "5": ("Ver estatísticas", self._estatisticas, True),
-            "6": ("Guardar em ficheiro", self._guardar, True),
-            "7": ("Carregar de ficheiro", self._carregar, True),
-            "8": ("Exportar", self._exportar, True),
+            "1": ("Listar tarefas", self._listar),
+            "2": ("Adicionar tarefa", self._adicionar),
+            "3": (
+                "Mudar estado de uma tarefa",
+                self._mudar_estado
+            ),
+            "4": ("Filtrar por estado", self._filtrar),
+            "5": ("Ver estatísticas", self._estatisticas),
+            "6": ("Guardar em ficheiro", self._guardar),
+            "7": ("Carregar de ficheiro", self._carregar),
+            "8": ("Exportar", self._exportar),
+            "9": (
+                "Relatório de custos",
+                self._relatorio_custos
+            )
         }
 
         while True:
 
             print("\n=== Gestão de Tarefas ===")
 
-            for tecla, (rotulo, _, feita) in opcoes.items():
-                marca = "" if feita else "  [TODO]"
-                print(f"  {tecla}. {rotulo}{marca}")
+            for tecla, (rotulo, _) in opcoes.items():
+                print(f"  {tecla}. {rotulo}")
 
             print("  0. Sair")
 
-            escolha = input("Escolhe uma opção: ").strip()
+            escolha = input(
+                "Escolhe uma opção: "
+            ).strip()
 
             if escolha == "0":
                 print("Até à próxima!")
@@ -43,16 +52,13 @@ class Consola:
                 print("Opção inválida.")
                 continue
 
-
             try:
                 opcao[1]()
-            except NotImplementedError as erro:
-                print(f"[TODO] {erro}")
-            except Exception as erro:
+
+            except (ValueError, TypeError) as erro:
                 print(f"Erro: {erro}")
 
-
-    def _listar(self):
+    def _listar(self) -> None:
 
         tarefas = self._servico.listar()
 
@@ -61,19 +67,41 @@ class Consola:
             return
 
         for tarefa in tarefas:
+            print()
             print(tarefa.detalhe())
 
-    def _adicionar(self):
+    def _adicionar(self) -> None:
 
-        tipo = input("Tipo (tecnica/reuniao): ").lower()
+        tipo = input(
+            "Tipo (tecnica/reuniao): "
+        ).strip().lower()
 
-        titulo = input("Título: ")
-        responsavel = input("Responsável: ")
+        titulo = input(
+            "Título: "
+        ).strip()
+
+        nome_responsavel = input(
+            "Nome do responsável: "
+        ).strip()
+
+        email_responsavel = input(
+            "Email do responsável: "
+        ).strip()
+
+        responsavel = Colaborador(
+            nome_responsavel,
+            email_responsavel
+        )
 
         if tipo == "tecnica":
 
-            linguagem = input("Linguagem: ")
-            horas = float(input("Horas estimadas: "))
+            linguagem = input(
+                "Linguagem: "
+            ).strip()
+
+            horas = self._ler_float_positivo(
+                "Horas estimadas: "
+            )
 
             tarefa = TarefaTecnica(
                 self._servico.proximo_id(),
@@ -85,8 +113,13 @@ class Consola:
 
         elif tipo == "reuniao":
 
-            local = input("Local: ")
-            duracao = float(input("Duração: "))
+            local = input(
+                "Local: "
+            ).strip()
+
+            duracao = self._ler_float_positivo(
+                "Duração: "
+            )
 
             tarefa = TarefaReuniao(
                 self._servico.proximo_id(),
@@ -104,16 +137,16 @@ class Consola:
 
         print("Tarefa adicionada com sucesso.")
 
-    def _mudar_estado(self):
+    def _mudar_estado(self) -> None:
 
-        try:
-            id_tarefa = int(input("ID da tarefa: "))
-        except ValueError:
-            print("O ID deve ser um número.")
-            return
-        novo_estado = input(
-            "Novo estado (pendente/em curso/concluída): "
+        id_tarefa = self._ler_inteiro(
+            "ID da tarefa: "
         )
+
+        novo_estado = input(
+            "Novo estado "
+            "(pendente/em curso/concluída): "
+        ).strip().lower()
 
         self._servico.mudar_estado(
             id_tarefa,
@@ -122,11 +155,12 @@ class Consola:
 
         print("Estado alterado.")
 
-    def _filtrar(self):
+    def _filtrar(self) -> None:
 
         estado = input(
-            "Estado (pendente/em curso/concluída): "
-        )
+            "Estado "
+            "(pendente/em curso/concluída): "
+        ).strip().lower()
 
         tarefas = self._servico.filtrar_por_estado(
             estado
@@ -137,33 +171,116 @@ class Consola:
             return
 
         for tarefa in tarefas:
+            print()
             print(tarefa.detalhe())
 
-    def _estatisticas(self):
+    def _estatisticas(self) -> None:
 
         estatisticas = self._servico.estatisticas()
 
         print("\n=== Estatísticas ===")
-        print(f"Total: {estatisticas['total']}")
-        print(f"Horas estimadas: {estatisticas['horas_estimadas']}")
+        print(
+            f"Total: "
+            f"{estatisticas['total']}"
+        )
+        print(
+            f"Horas estimadas: "
+            f"{estatisticas['horas_estimadas']}"
+        )
         print(
             f"Concluídas: "
             f"{estatisticas['percentagem_concluidas']:.2f}%"
         )
 
-    def _guardar(self):
-        self._servico.guardar()
-        print("Tarefas guardadas com sucesso.")
-        
-    def _carregar(self):
-        self._servico.carregar()
-        print("Tarefas carregadas com sucesso.")
+    def _guardar(self) -> None:
 
-    def _exportar(self):
+        self._servico.guardar()
+
+        print(
+            "Tarefas guardadas com sucesso."
+        )
+
+    def _carregar(self) -> None:
+
+        self._servico.carregar()
+
+        print(
+            "Tarefas carregadas com sucesso."
+        )
+
+    def _exportar(self) -> None:
 
         tarefas = self._servico.listar()
+
+        if not tarefas:
+            print("(sem tarefas para exportar)")
+            return
 
         print("\n=== Exportação ===")
 
         for tarefa in tarefas:
             print(tarefa.exportar())
+
+    def _relatorio_custos(self) -> None:
+
+        relatorio = (
+            self._servico.relatorio_custos()
+        )
+
+        print("\n=== Relatório de Custos ===")
+
+        if not relatorio["tarefas"]:
+            print("(sem tarefas faturáveis)")
+            return
+
+        for item in relatorio["tarefas"]:
+            print(
+                f"[{item['id']}] "
+                f"{item['titulo']} "
+                f"({item['tipo']}): "
+                f"{item['custo']:.2f} €"
+            )
+
+        print(
+            f"Total: "
+            f"{relatorio['total']:.2f} €"
+        )
+
+    def _ler_inteiro(
+        self,
+        mensagem: str
+    ) -> int:
+
+        while True:
+
+            try:
+                return int(
+                    input(mensagem)
+                )
+
+            except ValueError:
+                print(
+                    "Introduz um número inteiro válido."
+                )
+
+    def _ler_float_positivo(
+        self,
+        mensagem: str
+    ) -> float:
+
+        while True:
+
+            try:
+                valor = float(
+                    input(mensagem)
+                )
+
+                if valor <= 0:
+                    raise ValueError
+
+                return valor
+
+            except ValueError:
+                print(
+                    "Introduz um número positivo válido."
+                )

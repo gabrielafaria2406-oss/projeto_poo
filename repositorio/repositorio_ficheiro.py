@@ -1,47 +1,85 @@
 import csv
 import os
 
+from dominio.colaborador import Colaborador
 from dominio.tarefa import Tarefa
-from dominio.tarefa_tecnica import TarefaTecnica
 from dominio.tarefa_reuniao import TarefaReuniao
+from dominio.tarefa_tecnica import TarefaTecnica
 from repositorio.i_repositorio import IRepositorio
+
 
 SEPARADOR = ";"
 
 
 class RepositorioFicheiro(IRepositorio):
 
-    def __init__(self, caminho: str = "tarefas.csv"):
+    def __init__(
+        self,
+        caminho: str = "tarefas.csv"
+    ):
         self._caminho = caminho
 
-    def guardar(self, tarefas: list[Tarefa]) -> None:
-        with open(self._caminho, "w", newline="", encoding="utf-8") as f:
-            escritor = csv.writer(f, delimiter=SEPARADOR)
+    def guardar(
+        self,
+        tarefas: list[Tarefa]
+    ) -> None:
 
-            for t in tarefas:
-                escritor.writerow(self._para_linha(t))
+        with open(
+            self._caminho,
+            "w",
+            newline="",
+            encoding="utf-8"
+        ) as ficheiro:
 
-    def _para_linha(self, t: Tarefa) -> list:
+            escritor = csv.writer(
+                ficheiro,
+                delimiter=SEPARADOR
+            )
 
-        base = [
-            t.tipo(),
-            t.id,
-            t.titulo,
-            t.responsavel,
-            t.estado
+            for tarefa in tarefas:
+                escritor.writerow(
+                    self._para_linha(tarefa)
+                )
+
+    def _para_linha(
+        self,
+        tarefa: Tarefa
+    ) -> list:
+
+        dados_base = [
+            tarefa.tipo(),
+            tarefa.id,
+            tarefa.titulo,
+            tarefa.responsavel.nome,
+            tarefa.responsavel.email,
+            tarefa.estado
         ]
 
-        if isinstance(t, TarefaTecnica):
-            return base + [t.linguagem, t.estimativa_horas]
+        if isinstance(
+            tarefa,
+            TarefaTecnica
+        ):
+            return dados_base + [
+                tarefa.linguagem,
+                tarefa.estimativa_horas
+            ]
 
-        if isinstance(t, TarefaReuniao):
-            return base + [t.local, t.duracao]
+        if isinstance(
+            tarefa,
+            TarefaReuniao
+        ):
+            return dados_base + [
+                tarefa.local,
+                tarefa.duracao
+            ]
 
-        return base
+        return dados_base
 
-    def carregar(self) -> list:
+    def carregar(self) -> list[Tarefa]:
 
-        if not os.path.exists(self._caminho):
+        if not os.path.exists(
+            self._caminho
+        ):
             return []
 
         tarefas = []
@@ -51,67 +89,87 @@ class RepositorioFicheiro(IRepositorio):
             "r",
             newline="",
             encoding="utf-8"
-        ) as f:
+        ) as ficheiro:
 
             leitor = csv.reader(
-                f,
+                ficheiro,
                 delimiter=SEPARADOR
             )
 
-            for campos in leitor:
+            for numero_linha, campos in enumerate(
+                leitor,
+                start=1
+            ):
 
                 try:
-                    if len(campos) < 7:
-                        print(f"Linha ignorada (inválida): {campos}")
-                        continue
+                    tarefa = self._criar_tarefa(
+                        campos
+                    )
 
-                    tipo = campos[0]
+                    tarefas.append(tarefa)
 
-                    id_tarefa = int(campos[1])
-                    titulo = campos[2]
-                    responsavel = campos[3]
-                    estado = campos[4]
+                except (
+                    ValueError,
+                    TypeError,
+                    IndexError
+                ) as erro:
 
-                    if tipo == "tecnica":
-
-                        linguagem = campos[5]
-                        horas = float(campos[6])
-
-                        tarefas.append(
-                            TarefaTecnica(
-                                id_tarefa,
-                                titulo,
-                                responsavel,
-                                linguagem,
-                                horas,
-                                estado
-                            )
-                        )
-                    
-            
-
-                    elif tipo == "reuniao":
-
-                        local = campos[5]
-                        duracao = float(campos[6])
-
-                        tarefas.append(
-                            TarefaReuniao(
-                                id_tarefa,
-                                titulo,
-                                responsavel,
-                                local,
-                                duracao,
-                                estado
-                            )
-                        )
-                
-            
-
-                    else:
-                        print(f"Tipo desconhecido: {tipo}")
-
-                except (ValueError, IndexError) as e:
-                    print(f"Erro ao carregar linha {campos}: {e}")
+                    print(
+                        f"Linha {numero_linha} "
+                        f"ignorada: {erro}"
+                    )
 
         return tarefas
+
+    def _criar_tarefa(
+        self,
+        campos: list[str]
+    ) -> Tarefa:
+
+        if len(campos) < 8:
+            raise ValueError(
+                "A linha não possui todos os campos."
+            )
+
+        tipo = campos[0]
+        id_tarefa = int(campos[1])
+        titulo = campos[2]
+
+        responsavel = Colaborador(
+            campos[3],
+            campos[4]
+        )
+
+        estado = campos[5]
+
+        if tipo == "tecnica":
+
+            linguagem = campos[6]
+            horas = float(campos[7])
+
+            return TarefaTecnica(
+                id_tarefa,
+                titulo,
+                responsavel,
+                linguagem,
+                horas,
+                estado
+            )
+
+        if tipo == "reuniao":
+
+            local = campos[6]
+            duracao = float(campos[7])
+
+            return TarefaReuniao(
+                id_tarefa,
+                titulo,
+                responsavel,
+                local,
+                duracao,
+                estado
+            )
+
+        raise ValueError(
+            f"Tipo de tarefa desconhecido: {tipo}"
+        )
