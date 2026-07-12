@@ -1,17 +1,8 @@
-"""
-Camada de DOMÍNIO — subclasse COMPLETA, o teu exemplo trabalhado.
-
-Quando fores fazer a TarefaReuniao (que está em TODO), copia o padrão
-desta classe. Repara em três coisas:
-  1. class TarefaTecnica(Tarefa)  -> HERANÇA
-  2. super().__init__(...)         -> deixa a mãe tratar do que é dela
-  3. def resumo(self)             -> OVERRIDE: a versão própria do método
-"""
-
 from dominio.tarefa import Tarefa
+from dominio.faturavel import Faturavel
 
 
-class TarefaTecnica(Tarefa):
+class TarefaTecnica(Tarefa, Faturavel):
     """Tarefa de execução técnica (ex.: desenvolver um script Python)."""
 
     def __init__(self, id_tarefa: int, titulo: str, responsavel: str,
@@ -38,3 +29,7 @@ class TarefaTecnica(Tarefa):
 
     def tipo(self) -> str:
         return "tecnica"
+
+
+    def custo(self) -> float:
+        return self._estimativa_horas * 25

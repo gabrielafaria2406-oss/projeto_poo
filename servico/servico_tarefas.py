@@ -1,4 +1,5 @@
-from dominio.tarefa import Tarefa
+from dominio.faturavel import Faturavel
+from dominio.projeto import Projeto
 from dominio.tarefa_tecnica import TarefaTecnica
 from repositorio.i_repositorio import IRepositorio
 
@@ -7,58 +8,68 @@ class ServicoTarefas:
 
     def __init__(self, repositorio: IRepositorio):
         self._repositorio = repositorio
-        self._tarefas = []
+        self._projeto = Projeto("Projeto POO")
         self._proximo_id = 1
 
-    def proximo_id(self):
+    def proximo_id(self) -> int:
         return self._proximo_id
 
     def adicionar(self, tarefa):
-        self._tarefas.append(tarefa)
-        self._proximo_id = max(self._proximo_id, tarefa.id) + 1
+        self._projeto.adicionar_tarefa(tarefa)
+
+        self._proximo_id = max(
+            self._proximo_id,
+            tarefa.id + 1
+        )
+
         return tarefa
 
     def listar(self):
-        return list(self._tarefas)
+        return self._projeto.tarefas
 
-    def mudar_estado(self, id_tarefa, novo_estado):
+    def mudar_estado(
+        self,
+        id_tarefa: int,
+        novo_estado: str
+    ) -> None:
 
-        for tarefa in self._tarefas:
+        tarefa = self._projeto.procurar_tarefa(
+            id_tarefa
+        )
 
-            if tarefa.id == id_tarefa:
-                tarefa.estado = novo_estado
-                return
+        tarefa.estado = novo_estado
 
-        raise ValueError("Tarefa não encontrada.")
-
-    def filtrar_por_estado(self, estado):
+    def filtrar_por_estado(self, estado: str):
 
         return [
             tarefa
-            for tarefa in self._tarefas
+            for tarefa in self._projeto.tarefas
             if tarefa.estado == estado
         ]
 
     def estatisticas(self):
 
-        total = len(self._tarefas)
+        tarefas = self._projeto.tarefas
+        total = len(tarefas)
 
         horas_estimadas = sum(
             tarefa.estimativa_horas
-            for tarefa in self._tarefas
+            for tarefa in tarefas
             if isinstance(tarefa, TarefaTecnica)
         )
 
         concluidas = sum(
             1
-            for tarefa in self._tarefas
+            for tarefa in tarefas
             if tarefa.estado == "concluída"
         )
 
         percentagem = 0
 
         if total > 0:
-            percentagem = (concluidas / total) * 100
+            percentagem = (
+                concluidas / total
+            ) * 100
 
         return {
             "total": total,
@@ -66,23 +77,51 @@ class ServicoTarefas:
             "percentagem_concluidas": percentagem
         }
 
-    def guardar(self):
+    def guardar(self) -> None:
 
         self._repositorio.guardar(
-            self._tarefas
+            self._projeto.tarefas
         )
 
-    def carregar(self):
+    def carregar(self) -> None:
 
-        self._tarefas = (
-            self._repositorio.carregar()
+        tarefas = self._repositorio.carregar()
+
+        self._projeto.substituir_tarefas(
+            tarefas
         )
 
-        if self._tarefas:
-
-            self._proximo_id = (
-                max(
+        self._proximo_id = (
+            max(
+                (
                     tarefa.id
-                    for tarefa in self._tarefas
-                ) + 1
-            )
+                    for tarefa in tarefas
+                ),
+                default=0
+            ) + 1
+        )
+
+    def relatorio_custos(self):
+
+        total = 0
+        relatorio = []
+
+        for tarefa in self._projeto.tarefas:
+
+            if isinstance(tarefa, Faturavel):
+
+                custo = tarefa.custo()
+
+                relatorio.append({
+                    "id": tarefa.id,
+                    "titulo": tarefa.titulo,
+                    "tipo": tarefa.tipo(),
+                    "custo": custo
+                })
+
+                total += custo
+
+        return {
+            "tarefas": relatorio,
+            "total": total
+        }

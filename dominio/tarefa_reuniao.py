@@ -1,7 +1,8 @@
 from dominio.tarefa import Tarefa
+from dominio.faturavel import Faturavel
 
 
-class TarefaReuniao(Tarefa):
+class TarefaReuniao(Tarefa, Faturavel):
     """Tarefa de reunião (ex.: kickoff com o cliente)."""
 
     def __init__(self, id_tarefa: int, titulo: str, responsavel: str,
@@ -25,3 +26,6 @@ class TarefaReuniao(Tarefa):
 
     def tipo(self) -> str:
         return "reuniao"
+    
+    def custo(self) -> float:
+        return self._duracao * 15
